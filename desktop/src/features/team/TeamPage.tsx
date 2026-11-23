@@ -219,6 +219,8 @@ export function TeamPage({
   const [bundleMode, setBundleMode] = useState<null | "export" | "import">(null);
   const [bundleText, setBundleText] = useState("");
   const [bundleResult, setBundleResult] = useState<string | null>(null);
+  const [gitRefreshResult, setGitRefreshResult] = useState<string | null>(null);
+  const [gitRepo, setGitRepo] = useState("");
   const [projects, setProjects] = useState<
     { id: string; canonicalPath: string; displayName: string }[]
   >([]);
@@ -300,6 +302,12 @@ export function TeamPage({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- page load
     void loadTree();
   }, [loadTree]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- git config load
+    void loadGitConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot load
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- visibility load
@@ -991,6 +999,45 @@ export function TeamPage({
     setBundleResult(null);
   };
 
+  const refreshGit = async () => {
+    setGitRefreshResult(null);
+    try {
+      const result = await runtime.request("team/git/refresh", {});
+      if (!result.configured) {
+        setGitRefreshResult("未配置 team.git_repo（在下方输入框配置）");
+        return;
+      }
+      setGitRefreshResult(
+        result.ok ? `已更新：${result.message}` : `更新失败：${result.message}`,
+      );
+      await loadTree();
+    } catch (caught) {
+      setGitRefreshResult(String(caught));
+    }
+  };
+
+  const loadGitConfig = async () => {
+    try {
+      const result = await runtime.request("team/git/config", {});
+      setGitRepo(result.gitRepo ?? "");
+    } catch (caught) {
+      setGitRefreshResult(String(caught));
+    }
+  };
+
+  const saveGitRepo = async () => {
+    setGitRefreshResult(null);
+    try {
+      const result = await runtime.request("team/git/config", {
+        gitRepo: gitRepo.trim(),
+      });
+      setGitRepo(result.gitRepo ?? "");
+      setGitRefreshResult(result.gitRepo ? "已保存配置" : "已清除配置");
+    } catch (caught) {
+      setGitRefreshResult(String(caught));
+    }
+  };
+
   const runImport = async () => {
     try {
       const bundle = JSON.parse(bundleText);
@@ -1138,6 +1185,28 @@ export function TeamPage({
           </button>
           <button type="button" className={styles.ghost} onClick={openImport}>
             导入
+          </button>
+          <input
+            type="text"
+            className={styles.gitRepoInput}
+            placeholder="团队上下文 git 仓库 URL"
+            value={gitRepo}
+            onChange={(event) => setGitRepo(event.target.value)}
+          />
+          <button
+            type="button"
+            className={styles.ghost}
+            onClick={() => void saveGitRepo()}
+          >
+            保存
+          </button>
+          <button
+            type="button"
+            className={styles.ghost}
+            onClick={() => void refreshGit()}
+            title={gitRefreshResult ?? "从团队上下文 git 仓库刷新"}
+          >
+            Git 刷新
           </button>
           <button
             type="button"

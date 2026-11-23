@@ -754,6 +754,36 @@ class LLMConfigurationService:
         except ConfigRevisionConflict as exc:
             raise ConflictError(str(exc)) from exc
 
+    def get_team_git_repo(self) -> dict[str, Any]:
+        """The configured team-context git repo URL (or ``None``)."""
+        config = self._config()
+        return {"gitRepo": config.team.git_repo}
+
+    def set_team_git_repo(
+        self,
+        git_repo: str | None,
+        *,
+        expected_revision: str | None = None,
+    ) -> dict[str, Any]:
+        """Set (or clear, when ``None``/empty) the team-context git repo URL.
+
+        Only the ``team.git_repo`` leaf is touched; every other config key —
+        including credentials — is left byte-for-byte intact.
+        """
+
+        def transform(current: dict[str, Any]) -> dict[str, Any]:
+            team = current.get("team")
+            team = dict(team) if isinstance(team, dict) else {}
+            value = (git_repo or "").strip()
+            if value:
+                team["git_repo"] = value
+            else:
+                team.pop("git_repo", None)
+            return {**current, "team": team}
+
+        self._mutate_config(transform, expected_revision)
+        return self.get_team_git_repo()
+
     @staticmethod
     def _parse_mutation(
         value: dict[str, Any],

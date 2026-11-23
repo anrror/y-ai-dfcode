@@ -5712,6 +5712,23 @@
         "knowledgeId"
       ]
     },
+    "TeamGitRefreshParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+    "TeamGitConfigParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gitRepo": {
+          "type": "string"
+        },
+        "expectedRevision": {
+          "type": "string"
+        }
+      }
+    },
     "TeamEntityUpdateParams": {
       "type": "object",
       "additionalProperties": false,
@@ -7428,6 +7445,12 @@
         "team/knowledge/remove": {
           "$ref": "#/$defs/TeamKnowledgeRemoveParams"
         },
+        "team/git/refresh": {
+          "$ref": "#/$defs/TeamGitRefreshParams"
+        },
+        "team/git/config": {
+          "$ref": "#/$defs/TeamGitConfigParams"
+        },
         "git/status": {
           "$ref": "#/$defs/ThreadReadParams"
         },
@@ -7801,6 +7824,8 @@
         "team/knowledge/promote",
         "team/knowledge/update",
         "team/knowledge/remove",
+        "team/git/refresh",
+        "team/git/config",
         "git/status",
         "git/diff",
         "git/discard",
@@ -9109,6 +9134,41 @@
             "skippedKnowledge"
           ]
         },
+        "team/git/refresh": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "configured": {
+              "type": "boolean"
+            },
+            "ok": {
+              "type": "boolean"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "configured",
+            "ok",
+            "message"
+          ]
+        },
+        "team/git/config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "gitRepo": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "gitRepo"
+          ]
+        },
         "git/status": {
           "type": "object",
           "additionalProperties": false,
@@ -9678,6 +9738,8 @@
         "team/knowledge/promote",
         "team/knowledge/update",
         "team/knowledge/remove",
+        "team/git/refresh",
+        "team/git/config",
         "git/status",
         "git/diff",
         "git/discard",

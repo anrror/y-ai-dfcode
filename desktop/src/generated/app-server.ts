@@ -197,6 +197,8 @@ export interface MethodParams {
   "team/knowledge/promote": TeamKnowledgePromoteParams;
   "team/knowledge/update": TeamKnowledgeUpdateParams;
   "team/knowledge/remove": TeamKnowledgeRemoveParams;
+  "team/git/refresh": TeamGitRefreshParams;
+  "team/git/config": TeamGitConfigParams;
   "git/status": ThreadReadParams;
   "git/diff": GitDiffParams;
   "git/discard": GitDiscardParams;
@@ -982,6 +984,11 @@ export interface TeamKnowledgeRemoveParams {
   knowledgeId: string;
   shared?: boolean;
 }
+export interface TeamGitRefreshParams {}
+export interface TeamGitConfigParams {
+  gitRepo?: string;
+  expectedRevision?: string;
+}
 export interface GitDiffParams {
   threadId: string;
   scope?: "all" | "staged" | "working";
@@ -1382,6 +1389,14 @@ export interface MethodResults {
     skippedEntities: number;
     importedKnowledge: number;
     skippedKnowledge: number;
+  };
+  "team/git/refresh": {
+    configured: boolean;
+    ok: boolean;
+    message: string;
+  };
+  "team/git/config": {
+    gitRepo: string | null;
   };
   "git/status": {
     status: GitStatus;

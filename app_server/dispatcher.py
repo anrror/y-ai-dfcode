@@ -341,6 +341,7 @@ class Dispatcher:
             rpc_methods.TEAM_KNOWLEDGE_UPDATE: self._team_knowledge_update,
             rpc_methods.TEAM_KNOWLEDGE_REMOVE: self._team_knowledge_remove,
             rpc_methods.TEAM_GIT_REFRESH: self._team_git_refresh,
+            rpc_methods.TEAM_GIT_CONFIG: self._team_git_config,
             rpc_methods.FILE_LIST: self._file_list,
             rpc_methods.FILE_READ: self._file_read,
             rpc_methods.FILE_WRITE: self._file_write,
@@ -1972,6 +1973,21 @@ class Dispatcher:
             return {"configured": False, "ok": False, "message": "team.git_repo is not configured"}
         ok, message = refresh(repo_url)
         return {"configured": True, "ok": ok, "message": message}
+
+    def _team_git_config(self, params: Params) -> dict[str, Any]:
+        """Read or write the team-context git repo URL (team.git_repo).
+
+        A ``gitRepo`` field present sets the value (empty clears it); absent
+        means read-only. Only this one leaf is touched.
+        """
+        params.only("gitRepo", "expectedRevision")
+        service = self.application.llm
+        if "gitRepo" not in params.values:
+            return service.get_team_git_repo()
+        return service.set_team_git_repo(
+            params.string("gitRepo", required=False, allow_empty=True) or None,
+            expected_revision=params.string("expectedRevision", required=False),
+        )
 
     def _team_tree(self, params: Params) -> dict[str, Any]:
         params.only("projectId")

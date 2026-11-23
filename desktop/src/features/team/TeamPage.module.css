@@ -71,6 +71,21 @@
   white-space: nowrap;
 }
 
+.gitRepoInput {
+  flex: 1;
+  min-width: 220px;
+  padding: 6px 11px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font: var(--weight-regular) var(--text-xs) var(--font-ui);
+}
+
+.gitRepoInput::placeholder {
+  color: var(--text-muted);
+}
+
 .primary {
   border-color: var(--signal);
   background: var(--signal);
