@@ -19,6 +19,7 @@ from core.domain.execution_security import (
     FilesystemScope,
 )
 from core.harness.tools.files import EditTool, ReadTool, WriteTool
+from core.harness.tools.jenkins import JenkinsTool
 from core.harness.tools.patch import ApplyPatchTool, PatchError, parse_patch
 from core.harness.tools.replace import (
     DisproportionateMatchError,
@@ -37,6 +38,7 @@ __all__ = [
     "EditTool",
     "GlobTool",
     "GrepTool",
+    "JenkinsTool",
     "MultipleMatchesError",
     "NotFoundError",
     "PatchError",
@@ -90,13 +92,13 @@ def default_coding_tools(
     from core.agent_runtime.tools.registry import ToolRegistry
     from core.harness.memory import MemoryTool
     from core.harness.skills import SkillTool, discover_skills
+    from core.harness.tools.browser_use import BrowserUseTool
+    from core.harness.tools.computer_use import ComputerUseTool
     from core.harness.tools.goal import (
         GetGoalTool,
         ProposeGoalChecksTool,
         UpdateGoalTool,
     )
-    from core.harness.tools.browser_use import BrowserUseTool
-    from core.harness.tools.computer_use import ComputerUseTool
     from core.harness.tools.plan import UpdatePlanTool
     from core.harness.tools.spawn_agent import (
         InterruptAgentTool,
@@ -169,6 +171,7 @@ def default_coding_tools(
         TeamContextTool(workspace),
         WikiTool(workspace),
         CodeGraphTool(workspace),
+        JenkinsTool(workspace),
     ]
     # Standalone fallback is workspace-hermetic (no ambient ~/.claude scan);
     # build_agent_session passes the full project+user set via `skills`.

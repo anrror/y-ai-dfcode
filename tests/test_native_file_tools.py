@@ -235,6 +235,12 @@ def test_default_coding_tools_registry(tmp_path):
         "skill",
         "update_plan",
         "web_fetch",
+        "team_context",
+        "wiki",
+        "codegraph",
+        "browser",
+        "computer",
+        "jenkins",
     }
     assert set(reg.tool_names) == expected
     # schemas self-generate from the tool classes (single source of truth)
