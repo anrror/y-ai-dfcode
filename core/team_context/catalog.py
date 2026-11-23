@@ -112,11 +112,23 @@ def default_catalog_paths(
 def load_catalog(
     workspace: str | Path | None, home: str | Path | None = None
 ) -> Catalog:
-    """Load the global root, then a workspace overlay when one is given."""
+    """Load the global root, then a workspace overlay when one is given.
+
+    A third, lowest-precedence source is the read-only team-context git
+    repository cache (``<home>/team-git/``). It is merged first so the home
+    global layer overrides it and the workspace overlay overrides both. The
+    cache only exists after a successful clone/pull, so reading it is a pure
+    directory check with no config dependency.
+    """
 
     root = Path(home) if home is not None else Path.home()
     catalog = Catalog()
-    bases = [root / TEAM_RELATIVE]
+    bases: list[Path] = []
+    # Lowest precedence first: the read-only git repo cache.
+    git_cache = root / "team-git"
+    if git_cache.is_dir():
+        bases.append(git_cache)
+    bases.append(root / TEAM_RELATIVE)
     if workspace is not None:
         bases.append(Path(workspace) / TEAM_RELATIVE)
     for base in bases:

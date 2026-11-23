@@ -68,7 +68,6 @@ from core.providers.registry import (
     find_by_name,
 )
 
-
 _DEFAULT_CONFIG_FILENAME = "dfcode_config.json"
 # Env var that relocates the user-level config base (cf. Codex's CODEX_HOME).
 DFCODE_HOME_ENV = "DFCODE_HOME"
@@ -456,6 +455,20 @@ class WorkspaceConfig(_Base):
     max_input_mb: int = 100
 
 
+class TeamConfig(_Base):
+    """Team-context configuration.
+
+    ``git_repo`` is an optional company/line-level team-context meta-repo URL
+    (e.g. ``git@github.com:acme/team-context.git``). When set, DFcode clones it
+    into ``~/.dfcode/team-git/`` and reads it as a third, read-only data source
+    (lowest precedence: workspace > home > git repo). The git repo is a
+    distribution source, never a write target; credentials come from the git
+    credential manager.
+    """
+
+    git_repo: str | None = None
+
+
 class GoalConfig(_Base):
     """Thread Goal completion verification policy.
 
@@ -805,6 +818,7 @@ class DFcodeConfig(BaseSettings):
     skills: SkillsConfig = Field(default_factory=SkillsConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     workspace: WorkspaceConfig = Field(default_factory=WorkspaceConfig)
+    team: TeamConfig = Field(default_factory=TeamConfig)
     goal: GoalConfig = Field(default_factory=GoalConfig)
     # Absent means "voice input is off"; present means the user picked an
     # endpoint for it. A default *instance* could not tell those apart, and a
@@ -1534,7 +1548,6 @@ __all__ = [
     "CicdConfig",
     "ConfigError",
     "ConnectionProfileConfig",
-    "ManualModelConfig",
     "DFcodeConfig",
     "DictationConfig",
     "DocumentSegmentationConfig",
@@ -1548,16 +1561,16 @@ __all__ = [
     "LoggerPathSettings",
     "LoggerTaskFile",
     "MCPServerSchema",
+    "ManualModelConfig",
     "McpServerDefinition",
     "ProviderConfig",
     "ProvidersConfig",
     "ResolvedAgentSettings",
-
     "ToolsConfig",
     "WorkspaceConfig",
     "credential_variables",
-    "dfcode_home",
     "default_config_path",
+    "dfcode_home",
     "home_config_path",
     "load_config",
     "make_llm_provider",

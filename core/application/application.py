@@ -344,6 +344,7 @@ class DFcodeApplication:
             # processes do not double-scan. Never blocks startup.
             if lease.recovery_owner:
                 application._backfill_captures()
+                application._refresh_team_git_source()
             return application
         except BaseException:
             if application is not None:
@@ -394,8 +395,28 @@ class DFcodeApplication:
             )
             if captured:
                 logger.info("capture backfill: %d session(s) captured", captured)
-        except Exception:  # noqa: BLE001 - backfill never blocks startup
+        except Exception:
             logger.debug("capture backfill failed", exc_info=True)
+
+    def _refresh_team_git_source(self) -> None:
+        """Refresh the read-only team-context git source (best-effort).
+
+        Clones or pulls ``team.git_repo`` into ``~/.dfcode/team-git/`` when
+        configured. Never raises: a network/credential failure only means the
+        git source is skipped and the other two sources still assemble.
+        """
+        try:
+            from core.config import load_config
+            from core.team_context.git_source import is_configured, refresh
+
+            config = load_config()
+            repo_url = config.team.git_repo
+            if not is_configured(repo_url):
+                return
+            _ok, message = refresh(repo_url)
+            logger.info("team git source refresh: %s", message)
+        except Exception:
+            logger.debug("team git source refresh failed", exc_info=True)
 
     def close(self) -> None:
         errors: list[Exception] = []

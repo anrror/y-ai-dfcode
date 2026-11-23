@@ -340,6 +340,7 @@ class Dispatcher:
             rpc_methods.TEAM_KNOWLEDGE_PROMOTE: self._team_knowledge_promote,
             rpc_methods.TEAM_KNOWLEDGE_UPDATE: self._team_knowledge_update,
             rpc_methods.TEAM_KNOWLEDGE_REMOVE: self._team_knowledge_remove,
+            rpc_methods.TEAM_GIT_REFRESH: self._team_git_refresh,
             rpc_methods.FILE_LIST: self._file_list,
             rpc_methods.FILE_READ: self._file_read,
             rpc_methods.FILE_WRITE: self._file_write,
@@ -1959,6 +1960,18 @@ class Dispatcher:
             # Global view: the shared store is the source of truth.
             return TeamContextService(None)
         return TeamContextService(self._project_root(project_id))
+
+    def _team_git_refresh(self, params: Params) -> dict[str, Any]:
+        params.only()
+        from core.config import load_config
+        from core.team_context.git_source import is_configured, refresh
+
+        config = load_config()
+        repo_url = config.team.git_repo
+        if not is_configured(repo_url):
+            return {"configured": False, "ok": False, "message": "team.git_repo is not configured"}
+        ok, message = refresh(repo_url)
+        return {"configured": True, "ok": ok, "message": message}
 
     def _team_tree(self, params: Params) -> dict[str, Any]:
         params.only("projectId")
