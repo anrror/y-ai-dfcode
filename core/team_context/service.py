@@ -11,6 +11,7 @@ from typing import Any
 
 import yaml
 
+from core.task_identity import normalize_task_id
 from core.team_context.assembler import (
     DEFAULT_MAX_CHARS,
     SCOPE_RANK,
@@ -38,7 +39,6 @@ from core.team_context.models import (
     TeamContextError,
     TeamEntity,
 )
-from core.task_identity import normalize_task_id
 
 
 class TeamContextService:
@@ -539,6 +539,54 @@ class TeamContextService:
         env_dir.mkdir(parents=True, exist_ok=True)
         _write_yaml(env_dir / "active.yaml", {"name": _safe_env_name(name)})
         return {"active": name}
+
+    def active_environment_values(self) -> dict[str, str]:
+        """The bound layer's active environment, resolved up the chain.
+
+        Environment files live on project/product layers; the nearest one up
+        the ownership chain that has an ``active.yaml`` wins. Returns the active
+        file's ``values`` as a flat ``name -> value`` mapping (empty when none is
+        active). The values may be secrets — they are read only to be injected
+        into the agent's child processes, never into a prompt or a snapshot.
+        """
+
+        catalog = self.catalog()
+        bound = catalog.bind_for(self.workspace)
+        chain = resolve_chain(catalog, bound)
+        for entity in chain:
+            if entity.kind not in ("project", "product"):
+                continue
+            directory = catalog.directories.get(entity.id)
+            if directory is None:
+                continue
+            active_file = directory / "environments" / "active.yaml"
+            if not active_file.is_file():
+                continue
+            try:
+                raw = yaml.safe_load(active_file.read_text(encoding="utf-8")) or {}
+            except (OSError, yaml.YAMLError):
+                continue
+            if not isinstance(raw, dict):
+                continue
+            name = str(raw.get("name") or "").strip()
+            if not name:
+                continue
+            values_file = (
+                directory / "environments" / f"{_safe_env_name(name)}.yaml"
+            )
+            if not values_file.is_file():
+                continue
+            try:
+                payload = yaml.safe_load(values_file.read_text(encoding="utf-8")) or {}
+            except (OSError, yaml.YAMLError):
+                continue
+            values = payload.get("values") if isinstance(payload, dict) else {}
+            return {
+                str(key).strip(): str(value)
+                for key, value in (values or {}).items()
+                if str(key).strip()
+            }
+        return {}
 
     def _allowed_roots(self, entity_id: str) -> list[Path]:
         catalog = self.catalog()

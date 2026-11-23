@@ -168,6 +168,41 @@ class BashTool(Tool):
             self._declared_packages = _declared_packages(self._workspace)
         return self._declared_packages
 
+    def _team_env(self) -> dict[str, str]:
+        """The bound team layer's active environment, resolved and cached.
+
+        Reading team context on every bash call would hit the filesystem each
+        time; cache it once per tool instance. A missing/unbound layer simply
+        contributes nothing.
+        """
+
+        cached = getattr(self, "_team_env_cache", None)
+        if cached is not None:
+            return cached
+        values: dict[str, str] = {}
+        try:
+            from core.team_context.service import TeamContextService
+
+            values = TeamContextService(self._workspace).active_environment_values()
+        except Exception:  # noqa: BLE001 - a team-context problem must not block bash
+            values = {}
+        self._team_env_cache = values
+        return values
+
+    def _extra_env(self) -> dict[str, str] | None:
+        """Environment overrides for the child: team active env + read-only guard.
+
+        Returns ``None`` when there is nothing to merge, so ``child_env`` keeps
+        its default behaviour exactly.
+        """
+
+        extra: dict[str, str] = {}
+        if self._read_only_workspace:
+            # A read-only run cannot write bytecode beside the source.
+            extra["PYTHONDONTWRITEBYTECODE"] = "1"
+        extra.update(self._team_env())
+        return extra or None
+
     @property
     def name(self) -> str:
         return "bash"
@@ -231,13 +266,10 @@ class BashTool(Tool):
                 cwd=self._workspace,
                 # Never DFcode's own model keys or PYTHONPATH; with
                 # DFCODE_BASH_SCRUB_ENV=1 no credential-shaped variable
-                # either (see env_sanitize.child_env).
-                env=child_env(
-                    # A read-only run cannot write bytecode beside the source.
-                    {"PYTHONDONTWRITEBYTECODE": "1"}
-                    if self._read_only_workspace
-                    else None
-                ),
+                # either (see env_sanitize.child_env). The bound team layer's
+                # active environment is merged in last so the agent can use
+                # variables configured in the Team page.
+                env=child_env(self._extra_env()),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
             )
